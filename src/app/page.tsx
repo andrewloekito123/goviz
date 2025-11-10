@@ -9,12 +9,17 @@ import Masonry from "@/components/Masonry";
 import TiltedCard from "@/components/TiltedCard";
 import MasonryWrapper from "@/components/MasonryWrapper";
 import Footer from "@/components/Footer";
+import AOSInit from "@/components/AOSInit";
 
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50 font-sans">
+      <AOSInit />
       {/* Hero Section */}
-      <section className="relative w-full h-screen flex items-center justify-center bg-gradient-to-b from-[#032bff]/40 to-transparent overflow-hidden">
+      <section
+        className="relative w-full h-screen flex items-center justify-center bg-gradient-to-b from-[#032bff]/40 to-transparent overflow-hidden"
+        data-aos="fade-in"
+      >
         {/* Beams Background */}
         <BeamsWrapper />
 
@@ -56,12 +61,15 @@ export default function HomePage() {
       >
         <div className="max-w-7xl mx-auto px-6">
           {/* Section Title */}
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12 text-center">
+          <h2
+            className="text-3xl md:text-4xl font-bold text-gray-900 mb-12 text-center"
+            data-aos="fade-up"
+          >
             Our Projects
           </h2>
 
           {/* BentoGrid Showcase */}
-          <div className="mb-16">
+          <div className="mb-16 " data-aos="zoom-in">
             <MagicBento
               textAutoHide={true}
               enableStars={true}
@@ -77,16 +85,16 @@ export default function HomePage() {
           </div>
 
           {/* MasonryGrid Showcase */}
-          <div className="mb-16">
+          <div className="mb-16" data-aos="fade-up">
             <MasonryWrapper />
           </div>
 
           {/* TiltCards Showcase */}
           <div>
-            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12 text-center">
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-12 text-center" data-aos="fade-up">
               3D Tilt Cards
             </h3>
-            <div className="flex justify-center gap-6 flex-wrap">
+            <div className="flex justify-center gap-6 flex-wrap" data-aos="flip-left">
               {Array(5)
                 .fill(0)
                 .map((_, idx) => (
