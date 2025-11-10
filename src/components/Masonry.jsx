@@ -2,16 +2,27 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 
 const useMedia = (queries, values, defaultValue) => {
-  const get = () => values[queries.findIndex(q => matchMedia(q).matches)] ?? defaultValue;
+  // Helper to get current value
+  const get = () => {
+    if (typeof window === "undefined") return defaultValue; // SSR fallback
+    const index = queries.findIndex(q => window.matchMedia(q).matches);
+    return values[index] ?? defaultValue;
+  };
 
   const [value, setValue] = useState(get);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const handler = () => setValue(get);
-    queries.forEach(q => matchMedia(q).addEventListener('change', handler));
-    return () => queries.forEach(q => matchMedia(q).removeEventListener('change', handler));
+
+    const mqls = queries.map(q => window.matchMedia(q));
+
+    mqls.forEach(mql => mql.addEventListener("change", handler));
+
+    return () => mqls.forEach(mql => mql.removeEventListener("change", handler));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queries]);
+  }, [queries, values]);
 
   return value;
 };
