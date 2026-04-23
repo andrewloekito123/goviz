@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FORM — Architecture Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- GSAP + ScrollTrigger -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+
+  <!-- Three.js global build (r128 — has global example scripts) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f7f6f2;
+      --fg:       #0c0c0a;
+      --blue:     #032bff;
+      --muted:    #7a7870;
+      --border:   #dddbd3;
+      --blue-tint:#e8ebff;
+      --f:        'Space Grotesk', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; font-size: 16px; }
+
+    body {
+      font-family: var(--f);
+      background: var(--bg);
+      color: var(--fg);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--blue); border-radius: 2px; }
+
+    /* Loading screen */
+    #loader {
+      position: fixed; inset: 0;
+      background: var(--fg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10000;
+      transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1), visibility 0.8s;
+    }
+    #loader.out { opacity: 0; visibility: hidden; }
+    #loader-word {
+      font-size: clamp(48px, 8vw, 120px);
+      font-weight: 700;
+      color: var(--bg);
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      clip-path: inset(0 100% 0 0);
+      animation: reveal 0.9s cubic-bezier(0.77,0,0.18,1) 0.2s forwards;
+    }
+    @keyframes reveal { to { clip-path: inset(0 0% 0 0); } }
+
+    #root { min-height: 100vh; }
+
+    /* Shared reveal animation */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.22,1,0.36,1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Section layout shared */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-label::after {
+      content: '';
+      display: block;
+      height: 1px;
+      width: 40px;
+      background: var(--border);
+    }
+    .section-num {
+      color: var(--blue);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader"><div id="loader-word">FORM</div></div>
+  <div id="root"></div>
+
+  <!-- Sequential JSX loader — ensures files execute in order with React in scope -->
+  <script>
+  (async function() {
+    function waitFor(fn) {
+      return new Promise(resolve => {
+        if (fn()) return resolve();
+        const t = setInterval(() => { if (fn()) { clearInterval(t); resolve(); } }, 40);
+      });
+    }
+    await waitFor(() => window.Babel && window.React && window.ReactDOM);
+
+    const files = ['js/portfolio.jsx', 'js/viewer3d.jsx', 'js/app.jsx'];
+    for (const file of files) {
+      try {
+        const src = await fetch(file).then(r => r.text());
+        const { code } = Babel.transform(src, { presets: ['react'], filename: file });
+        new Function('React', 'ReactDOM', code)(React, ReactDOM);
+      } catch(e) {
+        console.error('Failed to load', file, e);
+      }
+    }
+    // Poll until React has fully painted, then inject GSAP init
+    (function waitAndInit() {
+      if (document.querySelectorAll('#projects .reveal').length > 0) {
+        const s = document.createElement('script');
+        s.src = 'js/gsap-init.js?v=' + Date.now();
+        document.body.appendChild(s);
+      } else {
+        setTimeout(waitAndInit, 120);
+      }
+    })();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GOVIZ Admin — CMS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f7f6f2; --fg: #0c0c0a; --blue: #032bff;
+      --sidebar: #0a0a0f; --border: #e0ddd5;
+      --muted: #7a7870; --f: 'Space Grotesk', sans-serif;
+      --danger: #e53935; --success: #1a9e5f;
+    }
+    html, body, #root { height: 100%; }
+    body { font-family: var(--f); background: var(--bg); color: var(--fg); -webkit-font-smoothing: antialiased; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--blue); }
+    input, textarea, select {
+      font-family: var(--f);
+      font-size: 14px;
+      color: var(--fg);
+    }
+    button { font-family: var(--f); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ── Initial data (same as portfolio) ──
+    const INITIAL_PROJECTS = [
+      { id:'1', title:'Meridian House',      year:'2024', location:'Copenhagen, Denmark', category:'Residential', description:'A study in light, threshold, and materiality.', tags:'Residential, Concrete, Net Zero', published:true,  model:null, cover:null },
+      { id:'2', title:'Axis Cultural Center',year:'2023', location:'Oslo, Norway',        category:'Cultural',    description:'A civic landmark around the concept of convergence.', tags:'Cultural, Public, Urban',      published:true,  model:null, cover:null },
+      { id:'3', title:'Parallax Tower',      year:'2023', location:'Berlin, Germany',     category:'Commercial',  description:'A mixed-use high-rise with a twist.', tags:'Commercial, High-rise, Mixed-use',  published:true,  model:null, cover:null },
+      { id:'4', title:'Ground Pavilion',     year:'2022', location:'Stockholm, Sweden',   category:'Public',      description:'A temporary installation that became permanent.', tags:'Public, Pavilion, Landscape',  published:true,  model:null, cover:null },
+      { id:'5', title:'Threshold Residence', year:'2022', location:'Helsinki, Finland',   category:'Residential', description:'Sited on the edge of a boreal forest.', tags:'Residential, Timber, Landscape',      published:true,  model:null, cover:null },
+      { id:'6', title:'Node Research Hub',   year:'2021', location:'Amsterdam, Netherlands', category:'Research', description:'A network of interlocking volumes.', tags:'Research, Academic, Modular',          published:false, model:null, cover:null },
+    ];
+
+    const INITIAL_SERVICES = [
+      { id:'s1', title:'Concept Design',           desc:'From brief to bold proposition — spatial strategy, massing, and narrative.' },
+      { id:'s2', title:'Architectural Design',      desc:'Full RIBA Stage 1–5 delivery, coordinated across all disciplines.' },
+      { id:'s3', title:'Interior Architecture',     desc:'Material palettes, furniture strategy, and experiential sequencing.' },
+      { id:'s4', title:'3D Visualisation',          desc:'Immersive renders and interactive 3D models for client communication.' },
+      { id:'s5', title:'Masterplanning',            desc:'Urban-scale thinking — site strategy, phasing, and public realm.' },
+      { id:'s6', title:'Heritage & Adaptive Reuse', desc:'Sensitive interventions within historic fabric, unlocking new life.' },
+    ];
+
+    const INITIAL_CONTACT = {
+      email: 'studio@goviz.dk',
+      phone: '+45 33 12 34 56',
+      address: 'Vesterbrogade 44, 1620 Copenhagen, DK',
+    };
+
+    // ── Sidebar ──
+    const SECTIONS = [
+      { id:'dashboard', label:'Dashboard',  icon:'▦' },
+      { id:'projects',  label:'Projects',   icon:'◻' },
+      { id:'services',  label:'Services',   icon:'≡' },
+      { id:'contact',   label:'Contact',    icon:'✉' },
+      { id:'settings',  label:'Settings',   icon:'⚙' },
+    ];
+
+    function GoVizMark({ size = 28, color = '#032bff' }) {
+      return (
+        <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+          <path d="M28 14 L86 14 L86 86 L14 86 L14 40 L28 14 Z M28 28 L28 72 L72 72 L72 56 L54 56 L54 48 L72 48 L72 28 Z"
+            fill={color} fillRule="evenodd"/>
+          <path d="M14 40 L28 14 L28 28 L14 40 Z" fill={color} opacity="0.5"/>
+        </svg>
+      );
+    }
+
+    function Sidebar({ active, onChange }) {
+      return (
+        <aside style={{
+          width: 220, background: 'var(--sidebar)', height: '100vh',
+          position: 'fixed', top: 0, left: 0,
+          display: 'flex', flexDirection: 'column',
+          borderRight: '1px solid #141420',
+        }}>
+          {/* Logo */}
+          <div style={{ padding: '28px 24px 24px', borderBottom: '1px solid #141420' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <GoVizMark size={30} color="#032bff"/>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '0.12em', color: '#fff' }}>GOVIZ</div>
+                <div style={{ fontSize: 9, letterSpacing: '0.2em', color: '#333', textTransform: 'uppercase' }}>Admin CMS</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav style={{ flex: 1, padding: '16px 0' }}>
+            {SECTIONS.map(s => (
+              <button key={s.id} onClick={() => onChange(s.id)} style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 24px', background: 'none', border: 'none',
+                textAlign: 'left', cursor: 'pointer',
+                color: active === s.id ? '#fff' : '#444',
+                borderLeft: `3px solid ${active === s.id ? 'var(--blue)' : 'transparent'}`,
+                background: active === s.id ? 'rgba(3,43,255,0.08)' : 'none',
+                transition: 'all 0.2s',
+              }}>
+                <span style={{ fontSize: 14, width: 20, textAlign: 'center' }}>{s.icon}</span>
+                <span style={{ fontSize: 13, fontWeight: active === s.id ? 600 : 400, letterSpacing: '0.04em' }}>{s.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          {/* Bottom */}
+          <div style={{ padding: '20px 24px', borderTop: '1px solid #141420' }}>
+            <a href="index.html" target="_blank" style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              fontSize: 11, color: '#333', textDecoration: 'none', letterSpacing: '0.1em',
+              textTransform: 'uppercase', transition: 'color 0.2s',
+            }} onMouseEnter={e => e.currentTarget.style.color='var(--blue)'}
+               onMouseLeave={e => e.currentTarget.style.color='#333'}>
+              <span>↗</span> View Portfolio
+            </a>
+          </div>
+        </aside>
+      );
+    }
+
+    // ── Header ──
+    function Header({ title, subtitle, action }) {
+      return (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+          marginBottom: 36, paddingBottom: 24,
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <div>
+            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 4 }}>{title}</h1>
+            {subtitle && <p style={{ fontSize: 13, color: 'var(--muted)' }}>{subtitle}</p>}
+          </div>
+          {action}
+        </div>
+      );
+    }
+
+    // ── Dashboard ──
+    function Dashboard({ projects, services }) {
+      const stats = [
+        { label: 'Total Projects',     value: projects.length,                      color: 'var(--blue)' },
+        { label: 'Published',          value: projects.filter(p => p.published).length, color: 'var(--success)' },
+        { label: 'Draft',              value: projects.filter(p => !p.published).length, color: '#e8a020' },
+        { label: 'Services',           value: services.length,                      color: '#7a7870' },
+      ];
+      return (
+        <div>
+          <Header title="Dashboard" subtitle="Welcome back — here's your content overview."/>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px,1fr))', gap: 12, marginBottom: 40 }}>
+            {stats.map(s => (
+              <div key={s.label} style={{ padding: '24px', border: '1px solid var(--border)', background: '#fff' }}>
+                <div style={{ fontSize: 36, fontWeight: 700, letterSpacing: '-0.03em', color: s.color, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 8 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 16 }}>Recent Projects</div>
+          <div style={{ border: '1px solid var(--border)' }}>
+            {projects.slice(0, 5).map((p, i) => (
+              <div key={p.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '14px 20px',
+                borderBottom: i < 4 ? '1px solid var(--border)' : 'none',
+                background: '#fff',
+              }}>
+                <div>
+                  <span style={{ fontSize: 14, fontWeight: 600 }}>{p.title}</span>
+                  <span style={{ fontSize: 12, color: 'var(--muted)', marginLeft: 12 }}>{p.location} · {p.year}</span>
+                </div>
+                <span style={{
+                  padding: '3px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                  background: p.published ? 'rgba(26,158,95,0.1)' : 'rgba(229,57,53,0.08)',
+                  color: p.published ? 'var(--success)' : 'var(--danger)',
+                }}>{p.published ? 'Published' : 'Draft'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Project Editor ──
+    function ProjectEditor({ project, onSave, onCancel }) {
+      const [form, setForm] = useState({ ...project });
+      const [modelFile, setModelFile] = useState(null);
+      const [coverFile, setCoverFile] = useState(null);
+      const [tab, setTab] = useState('info');
+
+      const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+      const inputStyle = {
+        width: '100%', border: '1px solid var(--border)',
+        padding: '10px 14px', fontSize: 14, background: '#fff',
+        outline: 'none', transition: 'border-color 0.2s',
+        borderRadius: 0,
+      };
+
+      const labelStyle = {
+        display: 'block', fontSize: 10, fontWeight: 700,
+        letterSpacing: '0.18em', textTransform: 'uppercase',
+        color: 'var(--muted)', marginBottom: 6,
+      };
+
+      return (
+        <div style={{ background: '#fff', border: '1px solid var(--border)' }}>
+          {/* Tabs */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)' }}>
+            {[['info','Project Info'],['media','Media & 3D'],['seo','SEO']].map(([id, label]) => (
+              <button key={id} onClick={() => setTab(id)} style={{
+                padding: '14px 24px', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--f)', fontSize: 12, fontWeight: tab===id ? 700 : 400,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                background: 'none', color: tab===id ? 'var(--blue)' : 'var(--muted)',
+                borderBottom: `2px solid ${tab===id ? 'var(--blue)' : 'transparent'}`,
+                marginBottom: -1,
+              }}>{label}</button>
+            ))}
+          </div>
+
+          <div style={{ padding: '28px 28px' }}>
+            {tab === 'info' && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                {[['title','Project Title'],['location','Location'],['year','Year'],['category','Category']].map(([k,l]) => (
+                  <div key={k}>
+                    <label style={labelStyle}>{l}</label>
+                    <input style={inputStyle} value={form[k]||''} onChange={e=>set(k,e.target.value)}
+                      onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                      onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                  </div>
+                ))}
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={labelStyle}>Description</label>
+                  <textarea rows={5} style={{...inputStyle, resize:'vertical'}} value={form.description||''}
+                    onChange={e=>set('description',e.target.value)}
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                    onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+                <div style={{ gridColumn: '1/-1' }}>
+                  <label style={labelStyle}>Tags (comma-separated)</label>
+                  <input style={inputStyle} value={form.tags||''} onChange={e=>set('tags',e.target.value)}
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                    onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+                <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+                    <div onClick={() => set('published', !form.published)} style={{
+                      width: 44, height: 24, borderRadius: 12,
+                      background: form.published ? 'var(--blue)' : '#ddd',
+                      position: 'relative', transition: 'background 0.3s', cursor: 'pointer',
+                    }}>
+                      <div style={{
+                        position: 'absolute', top: 3, left: form.published ? 23 : 3,
+                        width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                        transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }}/>
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: form.published ? 'var(--success)' : 'var(--danger)' }}>
+                      {form.published ? 'Published' : 'Draft'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {tab === 'media' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+                {/* Cover image upload */}
+                <div>
+                  <label style={labelStyle}>Cover Image</label>
+                  <label style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    border: '2px dashed var(--border)', padding: '40px 24px',
+                    cursor: 'pointer', background: coverFile ? 'rgba(3,43,255,0.03)' : '#fafaf8',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor='var(--blue)'}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
+                    {coverFile ? (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 24, marginBottom: 8 }}>🖼</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{coverFile.name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                          {(coverFile.size / 1024).toFixed(0)} KB — click to change
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: 12, opacity: 0.3 }}>
+                          <rect x="4" y="4" width="32" height="32" rx="2" stroke="var(--fg)" strokeWidth="1.5"/>
+                          <circle cx="14" cy="14" r="4" stroke="var(--fg)" strokeWidth="1.5"/>
+                          <path d="M4 28l10-10 6 6 4-4 12 10" stroke="var(--fg)" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Upload cover image</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>JPG, PNG, WEBP — recommended 1600×1000px</div>
+                      </>
+                    )}
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => setCoverFile(e.target.files[0])}/>
+                  </label>
+                </div>
+
+                {/* 3D model upload */}
+                <div>
+                  <label style={labelStyle}>3D Model (.GLB / .GLTF)</label>
+                  <label style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    border: '2px dashed var(--border)', padding: '40px 24px',
+                    cursor: 'pointer', background: modelFile ? 'rgba(3,43,255,0.03)' : '#fafaf8',
+                    transition: 'border-color 0.2s',
+                  }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor='var(--blue)'}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
+                    {modelFile ? (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: 24, marginBottom: 8 }}>◈</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{modelFile.name}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 4 }}>
+                          {(modelFile.size / 1024 / 1024).toFixed(2)} MB — click to change
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ marginBottom: 12, opacity: 0.3 }}>
+                          <path d="M20 4L36 12.5V27.5L20 36L4 27.5V12.5L20 4Z" stroke="var(--fg)" strokeWidth="1.5"/>
+                          <path d="M4 12.5L20 21M20 21L36 12.5M20 21V36" stroke="var(--fg)" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                        <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Upload 3D model</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)' }}>.GLB or .GLTF — max 100MB</div>
+                        <div style={{ fontSize: 11, color: '#aaa', marginTop: 6 }}>.SKP → export as .GLB from SketchUp first</div>
+                      </>
+                    )}
+                    <input type="file" accept=".glb,.gltf" style={{ display: 'none' }} onChange={e => setModelFile(e.target.files[0])}/>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {tab === 'seo' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div>
+                  <label style={labelStyle}>Meta Title</label>
+                  <input style={inputStyle} value={form.metaTitle || form.title || ''} onChange={e=>set('metaTitle',e.target.value)}
+                    placeholder={`${form.title} — GOVIZ`}
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                    onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+                <div>
+                  <label style={labelStyle}>Meta Description</label>
+                  <textarea rows={3} style={{...inputStyle, resize:'none'}}
+                    value={form.metaDesc || ''} onChange={e=>set('metaDesc',e.target.value)}
+                    placeholder="Brief description for search engines (max 160 chars)"
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                    onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+                <div>
+                  <label style={labelStyle}>Slug (URL)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--border)', background: '#fff' }}>
+                    <span style={{ padding: '10px 14px', fontSize: 13, color: 'var(--muted)', borderRight: '1px solid var(--border)', background: '#f7f6f2', whiteSpace: 'nowrap' }}>/projects/</span>
+                    <input style={{ ...inputStyle, border: 'none', borderRadius: 0 }}
+                      value={form.slug || form.title?.toLowerCase().replace(/\s+/g,'-') || ''}
+                      onChange={e=>set('slug',e.target.value)}
+                      onFocus={e=>e.target.style.borderColor='transparent'}/>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', gap: 10,
+            padding: '18px 28px', borderTop: '1px solid var(--border)', background: '#fafaf8',
+          }}>
+            <button onClick={onCancel} style={{
+              padding: '9px 20px', border: '1px solid var(--border)', background: 'none',
+              cursor: 'pointer', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+              transition: 'border-color 0.2s',
+            }}>Cancel</button>
+            <button onClick={() => onSave(form)} style={{
+              padding: '9px 24px', background: 'var(--blue)', color: '#fff', border: 'none',
+              cursor: 'pointer', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+              transition: 'opacity 0.2s',
+            }} onMouseEnter={e=>e.target.style.opacity='0.82'}
+               onMouseLeave={e=>e.target.style.opacity='1'}>Save Project</button>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Projects Panel ──
+    function ProjectsPanel() {
+      const [projects, setProjects] = useState(INITIAL_PROJECTS);
+      const [editing, setEditing] = useState(null);
+      const [search, setSearch] = useState('');
+      const [toast, setToast] = useState(null);
+
+      const showToast = (msg, type='success') => {
+        setToast({ msg, type });
+        setTimeout(() => setToast(null), 2800);
+      };
+
+      const togglePublish = (id) => {
+        setProjects(ps => ps.map(p => p.id===id ? { ...p, published: !p.published } : p));
+        const p = projects.find(p=>p.id===id);
+        showToast(`"${p.title}" ${p.published ? 'unpublished' : 'published'}.`);
+      };
+
+      const deleteProject = (id) => {
+        const p = projects.find(p=>p.id===id);
+        if (!confirm(`Delete "${p.title}"? This cannot be undone.`)) return;
+        setProjects(ps => ps.filter(p=>p.id!==id));
+        showToast(`"${p.title}" deleted.`, 'danger');
+      };
+
+      const addProject = () => {
+        const np = { id: Date.now()+'', title:'New Project', year: new Date().getFullYear()+'', location:'', category:'', description:'', tags:'', published:false, model:null, cover:null };
+        setProjects(ps => [np, ...ps]);
+        setEditing(np);
+      };
+
+      const saveEdit = (form) => {
+        setProjects(ps => ps.map(p => p.id===form.id ? form : p));
+        setEditing(null);
+        showToast(`"${form.title}" saved.`);
+      };
+
+      const filtered = projects.filter(p =>
+        p.title.toLowerCase().includes(search.toLowerCase()) ||
+        p.location.toLowerCase().includes(search.toLowerCase()) ||
+        p.category.toLowerCase().includes(search.toLowerCase())
+      );
+
+      return (
+        <div>
+          <Header
+            title="Projects"
+            subtitle={`${projects.filter(p=>p.published).length} published · ${projects.filter(p=>!p.published).length} draft`}
+            action={
+              <button onClick={addProject} style={{
+                background:'var(--blue)', color:'#fff', border:'none',
+                padding:'10px 22px', cursor:'pointer',
+                fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase',
+                display:'flex', alignItems:'center', gap:8,
+              }}>
+                <span style={{fontSize:16,fontWeight:300}}>+</span> New Project
+              </button>
+            }
+          />
+
+          {/* Search */}
+          <div style={{ marginBottom: 20, position: 'relative' }}>
+            <input value={search} onChange={e=>setSearch(e.target.value)}
+              placeholder="Search projects…"
+              style={{
+                width: '100%', border: '1px solid var(--border)', padding: '10px 14px 10px 38px',
+                fontSize: 13, background: '#fff', outline: 'none',
+              }}/>
+            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.3, fontSize: 14 }}>⌕</span>
+          </div>
+
+          {editing && (
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 10 }}>
+                Editing: <strong style={{ color: 'var(--fg)' }}>{editing.title}</strong>
+              </div>
+              <ProjectEditor project={editing} onSave={saveEdit} onCancel={() => setEditing(null)}/>
+            </div>
+          )}
+
+          {/* Table */}
+          <div style={{ border: '1px solid var(--border)', background: '#fff' }}>
+            {/* Table header */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+              padding: '10px 20px', borderBottom: '1px solid var(--border)',
+              background: '#f7f6f2',
+            }}>
+              {['Project', 'Category', 'Year', 'Status', 'Actions'].map(h => (
+                <div key={h} style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--muted)' }}>{h}</div>
+              ))}
+            </div>
+
+            {filtered.length === 0 && (
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>
+                No projects match your search.
+              </div>
+            )}
+
+            {filtered.map((p, i) => (
+              <div key={p.id} style={{
+                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 120px',
+                padding: '14px 20px', alignItems: 'center',
+                borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none',
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e=>e.currentTarget.style.background='#fafaf8'}
+              onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{p.location}</div>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{p.category}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{p.year}</div>
+                <div>
+                  <span style={{
+                    padding: '3px 10px', fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+                    background: p.published ? 'rgba(26,158,95,0.1)' : 'rgba(229,57,53,0.08)',
+                    color: p.published ? 'var(--success)' : 'var(--danger)',
+                  }}>{p.published ? 'Published' : 'Draft'}</span>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => setEditing(p)} title="Edit" style={{
+                    background:'none', border:'1px solid var(--border)', cursor:'pointer',
+                    padding:'5px 10px', fontSize:11, color:'var(--fg)',
+                    transition:'all 0.2s',
+                  }} onMouseEnter={e=>{e.target.style.borderColor='var(--blue)';e.target.style.color='var(--blue)'}}
+                     onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='var(--fg)'}}>Edit</button>
+                  <button onClick={() => togglePublish(p.id)} title="Toggle publish" style={{
+                    background:'none', border:'1px solid var(--border)', cursor:'pointer',
+                    padding:'5px 8px', fontSize:12, color: p.published ? 'var(--danger)' : 'var(--success)',
+                    transition:'border-color 0.2s',
+                  }} onMouseEnter={e=>e.target.style.borderColor=p.published?'var(--danger)':'var(--success)'}
+                     onMouseLeave={e=>e.target.style.borderColor='var(--border)'}
+                  >{p.published ? '⏸' : '▶'}</button>
+                  <button onClick={() => deleteProject(p.id)} title="Delete" style={{
+                    background:'none', border:'1px solid var(--border)', cursor:'pointer',
+                    padding:'5px 8px', fontSize:12, color:'#bbb', transition:'all 0.2s',
+                  }} onMouseEnter={e=>{e.target.style.borderColor='var(--danger)';e.target.style.color='var(--danger)'}}
+                     onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='#bbb'}}>✕</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Toast */}
+          {toast && (
+            <div style={{
+              position:'fixed', bottom:24, right:24, zIndex:9999,
+              background: toast.type==='danger' ? 'var(--danger)' : 'var(--fg)',
+              color:'#fff', padding:'12px 22px', fontSize:13, fontWeight:500,
+              boxShadow:'0 4px 20px rgba(0,0,0,0.2)',
+              animation:'slideInToast 0.3s ease',
+            }}>{toast.msg}</div>
+          )}
+          <style>{`@keyframes slideInToast { from { transform:translateY(16px); opacity:0 } to { transform:none; opacity:1 } }`}</style>
+        </div>
+      );
+    }
+
+    // ── Services Panel ──
+    function ServicesPanel() {
+      const [services, setServices] = useState(INITIAL_SERVICES);
+      const [editingId, setEditingId] = useState(null);
+      const [editBuf, setEditBuf] = useState({});
+
+      const startEdit = (s) => { setEditingId(s.id); setEditBuf({ ...s }); };
+      const saveEdit = () => {
+        setServices(ss => ss.map(s => s.id===editingId ? editBuf : s));
+        setEditingId(null);
+      };
+      const deleteService = (id) => setServices(ss => ss.filter(s => s.id!==id));
+      const addService = () => {
+        const ns = { id: Date.now()+'', title:'New Service', desc:'' };
+        setServices(ss => [...ss, ns]);
+        startEdit(ns);
+      };
+
+      const inputStyle = {
+        width: '100%', border: '1px solid var(--border)', padding: '8px 12px',
+        fontSize: 13, background: '#fff', outline: 'none', borderRadius: 0,
+        onFocus: e => e.target.style.borderColor='var(--blue)',
+      };
+
+      return (
+        <div>
+          <Header title="Services" subtitle="Manage what your studio offers."
+            action={
+              <button onClick={addService} style={{
+                background:'var(--blue)', color:'#fff', border:'none',
+                padding:'10px 22px', cursor:'pointer',
+                fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase',
+                display:'flex', alignItems:'center', gap:8,
+              }}><span style={{fontSize:16}}>+</span> Add Service</button>
+            }/>
+          <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+            {services.map((s, i) => (
+              <div key={s.id} style={{ border: '1px solid var(--border)', background:'#fff' }}>
+                {editingId === s.id ? (
+                  <div style={{ padding:'20px 22px', display:'flex', flexDirection:'column', gap:12 }}>
+                    <input value={editBuf.title} onChange={e=>setEditBuf(b=>({...b,title:e.target.value}))}
+                      style={inputStyle} placeholder="Service title"
+                      onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                      onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                    <textarea rows={3} value={editBuf.desc} onChange={e=>setEditBuf(b=>({...b,desc:e.target.value}))}
+                      style={{...inputStyle, resize:'vertical'}} placeholder="Service description"
+                      onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                      onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={saveEdit} style={{ padding:'7px 18px', background:'var(--blue)', color:'#fff', border:'none', cursor:'pointer', fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase' }}>Save</button>
+                      <button onClick={()=>setEditingId(null)} style={{ padding:'7px 18px', background:'none', border:'1px solid var(--border)', cursor:'pointer', fontSize:11, fontWeight:600, letterSpacing:'0.1em', textTransform:'uppercase' }}>Cancel</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'16px 22px' }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:600, marginBottom:3 }}>{s.title}</div>
+                      <div style={{ fontSize:12, color:'var(--muted)', lineHeight:1.5 }}>{s.desc}</div>
+                    </div>
+                    <div style={{ display:'flex', gap:6, flexShrink:0, marginLeft:16 }}>
+                      <button onClick={()=>startEdit(s)} style={{ padding:'5px 12px', border:'1px solid var(--border)', background:'none', cursor:'pointer', fontSize:11, fontWeight:600, letterSpacing:'0.06em' }}>Edit</button>
+                      <button onClick={()=>deleteService(s.id)} style={{ padding:'5px 8px', border:'1px solid var(--border)', background:'none', cursor:'pointer', fontSize:12, color:'#bbb', transition:'all 0.2s' }}
+                        onMouseEnter={e=>{e.target.style.borderColor='var(--danger)';e.target.style.color='var(--danger)'}}
+                        onMouseLeave={e=>{e.target.style.borderColor='var(--border)';e.target.style.color='#bbb'}}>✕</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ── Contact Panel ──
+    function ContactPanel() {
+      const [info, setInfo] = useState(INITIAL_CONTACT);
+      const [saved, setSaved] = useState(false);
+      const set = (k, v) => { setInfo(i=>({...i,[k]:v})); setSaved(false); };
+      const inputStyle = {
+        width:'100%', border:'1px solid var(--border)', padding:'10px 14px',
+        fontSize:14, background:'#fff', outline:'none', borderRadius:0,
+      };
+      return (
+        <div>
+          <Header title="Contact Info" subtitle="Studio contact details shown on the portfolio site."/>
+          <div style={{ background:'#fff', border:'1px solid var(--border)', padding:'28px', maxWidth:560 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              {[['email','Email Address'],['phone','Phone Number'],['address','Studio Address']].map(([k,l]) => (
+                <div key={k}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)', marginBottom:6 }}>{l}</label>
+                  {k==='address' ? (
+                    <textarea rows={2} value={info[k]} onChange={e=>set(k,e.target.value)}
+                      style={{...inputStyle, resize:'none'}}
+                      onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                      onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                  ) : (
+                    <input value={info[k]} onChange={e=>set(k,e.target.value)} style={inputStyle}
+                      onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                      onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                  )}
+                </div>
+              ))}
+              <button onClick={()=>setSaved(true)} style={{
+                alignSelf:'flex-start', background:'var(--blue)', color:'#fff', border:'none',
+                padding:'10px 24px', cursor:'pointer',
+                fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase',
+                transition:'opacity 0.2s',
+              }} onMouseEnter={e=>e.target.style.opacity='0.82'}
+                 onMouseLeave={e=>e.target.style.opacity='1'}>
+                {saved ? '✓ Saved' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Settings Panel ──
+    function SettingsPanel() {
+      const [form, setForm] = useState({ name:'GOVIZ', tagline:'Architecture & Visualisation', year:'2012', city:'Copenhagen', country:'Denmark' });
+      const [saved, setSaved] = useState(false);
+      const inputStyle = { width:'100%', border:'1px solid var(--border)', padding:'10px 14px', fontSize:14, background:'#fff', outline:'none' };
+      return (
+        <div>
+          <Header title="Settings" subtitle="Global studio configuration."/>
+          <div style={{ background:'#fff', border:'1px solid var(--border)', padding:'28px', maxWidth:560 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+              {[['name','Studio Name'],['tagline','Tagline'],['year','Founded'],['city','City'],['country','Country']].map(([k,l]) => (
+                <div key={k} style={{ gridColumn: k==='tagline' ? '1/-1' : undefined }}>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, letterSpacing:'0.18em', textTransform:'uppercase', color:'var(--muted)', marginBottom:6 }}>{l}</label>
+                  <input value={form[k]} onChange={e=>{ setForm(f=>({...f,[k]:e.target.value})); setSaved(false); }}
+                    style={inputStyle}
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'}
+                    onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
+              ))}
+              <div style={{ gridColumn:'1/-1' }}>
+                <button onClick={()=>setSaved(true)} style={{
+                  background:'var(--blue)', color:'#fff', border:'none',
+                  padding:'10px 24px', cursor:'pointer',
+                  fontSize:11, fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase',
+                }}>
+                  {saved ? '✓ Saved' : 'Save Settings'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Admin App ──
+    function AdminApp() {
+      const [section, setSection] = useState('dashboard');
+      const [projects, setProjects] = useState(INITIAL_PROJECTS);
+      const [services] = useState(INITIAL_SERVICES);
+
+      const panels = {
+        dashboard: <Dashboard projects={projects} services={services}/>,
+        projects:  <ProjectsPanel/>,
+        services:  <ServicesPanel/>,
+        contact:   <ContactPanel/>,
+        settings:  <SettingsPanel/>,
+      };
+
+      return (
+        <div style={{ display:'flex', height:'100vh' }}>
+          <Sidebar active={section} onChange={setSection}/>
+          <main style={{
+            marginLeft:220, flex:1, overflowY:'auto',
+            padding:'44px 48px', minHeight:'100vh',
+          }}>
+            {panels[section]}
+          </main>
+        </div>
+      );
+    }
+
+    const adminRoot = ReactDOM.createRoot(document.getElementById('root'));
+    adminRoot.render(<AdminApp/>);
+  </script>
+</body>
+</html>
