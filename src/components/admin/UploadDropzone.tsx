@@ -46,8 +46,19 @@ export default function UploadDropzone({
 
     try {
       const folder = kind === "image" ? "covers" : "models";
-      const blob = await upload(`${folder}/${file.name}`, file, {
-        access: "public",
+      const ext = file.name.includes(".")
+        ? file.name.slice(file.name.lastIndexOf(".")).toLowerCase()
+        : "";
+      const base = file.name
+        .slice(0, file.name.length - ext.length)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")
+        .slice(0, 60) || "file";
+      const safePath = `${folder}/${base}${ext}`;
+
+      const blob = await upload(safePath, file, {
+        access: "private",
         handleUploadUrl: "/api/upload",
         onUploadProgress: (event) => {
           setProgress(event.percentage);
