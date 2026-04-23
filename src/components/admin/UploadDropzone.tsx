@@ -58,7 +58,7 @@ export default function UploadDropzone({
       const safePath = `${folder}/${base}${ext}`;
 
       const blob = await upload(safePath, file, {
-        access: "private",
+        access: "public",
         handleUploadUrl: "/api/upload",
         onUploadProgress: (event) => {
           setProgress(event.percentage);
